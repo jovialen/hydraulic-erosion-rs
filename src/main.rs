@@ -45,13 +45,37 @@ fn setup_terrain(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    let mut terrain_mesh = Mesh::from(shape::Plane {
+        size: 5.0,
+        subdivisions: 10,
+    });
+    update_mesh_positions(&mut terrain_mesh, |mut vertex| {
+        vertex.y = rand::random();
+        vertex
+    });
+
     commands.spawn(TerrainBundle {
         pbr: PbrBundle {
-            mesh: meshes.add(shape::Plane::from_size(5.0).into()),
+            mesh: meshes.add(terrain_mesh),
             material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
             ..default()
         },
         ..default()
     });
+}
+
+fn update_mesh_positions<F>(mesh: &mut Mesh, mut f: F)
+where
+    F: FnMut(Vec3) -> Vec3,
+{
+    use bevy::render::mesh::VertexAttributeValues;
+
+    let positions = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION).unwrap();
+
+    if let VertexAttributeValues::Float32x3(vertices, ..) = positions {
+        for vertex in vertices {
+            *vertex = f(Vec3::from_array(*vertex)).to_array();
+        }
+    }
 }
