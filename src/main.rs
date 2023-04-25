@@ -1,8 +1,6 @@
 use bevy::pbr::prelude::*;
-use bevy::prelude::*;
-
-#[cfg(feature = "wireframe")]
 use bevy::pbr::wireframe::*;
+use bevy::prelude::*;
 
 #[derive(Bundle, Default)]
 struct TerrainBundle {
