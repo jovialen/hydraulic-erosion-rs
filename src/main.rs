@@ -85,12 +85,53 @@ where
 {
     use bevy::render::mesh::VertexAttributeValues;
 
-    let positions = mesh.attribute_mut(Mesh::ATTRIBUTE_POSITION).unwrap();
+    // Update mesh positions
+    let positions = match mesh
+        .attribute_mut(Mesh::ATTRIBUTE_POSITION)
+        .expect("mesh vertex positions")
+    {
+        VertexAttributeValues::Float32x3(positions, ..) => positions,
+        _ => unreachable!("mesh vertex positions should be of type Vec3"),
+    };
 
-    if let VertexAttributeValues::Float32x3(vertices, ..) = positions {
-        for vertex in vertices {
-            *vertex = f(Vec3::from_array(*vertex)).to_array();
-        }
+    for position in positions.iter_mut() {
+        *position = f(Vec3::from_array(*position)).to_array();
+    }
+
+    let positions = positions.clone();
+
+    // Re-calculate mesh normals
+    let indices = mesh
+        .indices()
+        .expect("mesh indices")
+        .iter()
+        .collect::<Vec<_>>();
+
+    let normals = match mesh
+        .attribute_mut(Mesh::ATTRIBUTE_NORMAL)
+        .expect("mesh vertex normals")
+    {
+        VertexAttributeValues::Float32x3(normals, ..) => normals,
+        _ => unreachable!("mesh vertex normals should be of type Vec3"),
+    };
+
+    for chunk in indices.chunks_exact(3) {
+        let a = chunk[0];
+        let b = chunk[1];
+        let c = chunk[2];
+
+        let va = Vec3::from_array(positions[a]);
+        let vb = Vec3::from_array(positions[b]);
+        let vc = Vec3::from_array(positions[c]);
+
+        let vba = vb - va;
+        let vca = vc - va;
+        let nf = vba.cross(vca);
+        let nv = nf / nf.length();
+
+        normals[a] = nv.to_array();
+        normals[b] = nv.to_array();
+        normals[c] = nv.to_array();
     }
 }
 
