@@ -1,6 +1,10 @@
+mod orbit_camera;
+
 use bevy::pbr::prelude::*;
 use bevy::pbr::wireframe::*;
 use bevy::prelude::*;
+use noise::{NoiseFn, Perlin};
+use orbit_camera::*;
 
 #[derive(Bundle, Default)]
 struct TerrainBundle {
@@ -15,6 +19,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(WireframePlugin)
+        .add_plugin(OrbitCameraPlugin)
         .add_startup_system(setup_camera)
         .add_startup_system(setup_lights)
         .add_startup_system(setup_terrain)
@@ -22,8 +27,11 @@ fn main() {
 }
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, 5.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+    commands.spawn(OrbitCameraBundle {
+        camera: Camera3dBundle {
+            transform: Transform::from_xyz(0.0, 5.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+            ..default()
+        },
         ..default()
     });
 }
@@ -46,11 +54,14 @@ fn setup_terrain(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let mut terrain_mesh = Mesh::from(shape::Plane {
-        size: 5.0,
-        subdivisions: 10,
+        size: 10.0,
+        subdivisions: 100,
     });
-    update_mesh_positions(&mut terrain_mesh, |mut vertex| {
-        vertex.y = rand::random();
+
+    let noise = Perlin::new(rand::random());
+    update_mesh_positions(&mut terrain_mesh, move |mut vertex| {
+        let point: [f64; 2] = [vertex.x as f64, vertex.z as f64];
+        vertex.y = noise.get(point) as f32;
         vertex
     });
 
