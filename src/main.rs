@@ -63,7 +63,7 @@ fn setup_terrain(
 
     let noise = Perlin::new(rand::random());
     update_mesh_positions(&mut terrain_mesh, move |mut vertex| {
-        let point: [f64; 2] = [vertex.x as f64, vertex.z as f64];
+        let point: [f64; 2] = [vertex.x as f64 / 1.5, vertex.z as f64 / 1.5];
         vertex.y = noise.get(point) as f32;
         vertex
     });
