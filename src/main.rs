@@ -16,6 +16,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(WireframePlugin)
         .add_startup_system(setup_camera)
+        .add_startup_system(setup_lights)
         .add_startup_system(setup_terrain)
         .run();
 }
@@ -23,6 +24,18 @@ fn main() {
 fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(0.0, 5.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ..default()
+    });
+}
+
+fn setup_lights(mut commands: Commands) {
+    commands.spawn(PointLightBundle {
+        point_light: PointLight {
+            intensity: 1500.0,
+            shadows_enabled: true,
+            ..default()
+        },
+        transform: Transform::from_xyz(0.0, 10.0, 0.0),
         ..default()
     });
 }
