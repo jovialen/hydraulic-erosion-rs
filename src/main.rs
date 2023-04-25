@@ -1,5 +1,6 @@
 mod orbit_camera;
 
+use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::pbr::prelude::*;
 use bevy::pbr::wireframe::*;
 use bevy::prelude::*;
@@ -20,6 +21,8 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(WireframePlugin)
         .add_plugin(OrbitCameraPlugin)
+        .add_plugin(FrameTimeDiagnosticsPlugin)
+        .add_plugin(LogDiagnosticsPlugin::default())
         .add_startup_system(setup_camera)
         .add_startup_system(setup_lights)
         .add_startup_system(setup_terrain)
