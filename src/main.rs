@@ -1,18 +1,13 @@
 mod orbit_camera;
+mod terrain;
 
-use bevy::diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin};
 use bevy::pbr::prelude::*;
 use bevy::pbr::wireframe::*;
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
-use noise::{NoiseFn, Perlin};
 use orbit_camera::*;
-
-#[derive(Bundle, Default)]
-struct TerrainBundle {
-    #[bundle]
-    pbr: PbrBundle,
-}
+use terrain::*;
 
 fn main() {
     App::new()
@@ -20,8 +15,8 @@ fn main() {
         .add_plugin(EguiPlugin)
         .add_plugin(WireframePlugin)
         .add_plugin(OrbitCameraPlugin)
+        .add_plugin(TerrainPlugin)
         .add_plugin(FrameTimeDiagnosticsPlugin)
-        .add_plugin(LogDiagnosticsPlugin::default())
         .add_startup_system(setup_camera)
         .add_startup_system(setup_lights)
         .add_startup_system(setup_terrain)
@@ -51,26 +46,10 @@ fn setup_lights(mut commands: Commands) {
     });
 }
 
-fn setup_terrain(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    let mut terrain_mesh = Mesh::from(shape::Plane {
-        size: 10.0,
-        subdivisions: 100,
-    });
-
-    let noise = Perlin::new(rand::random());
-    update_mesh_positions(&mut terrain_mesh, move |mut vertex| {
-        let point: [f64; 2] = [vertex.x as f64 / 1.5, vertex.z as f64 / 1.5];
-        vertex.y = noise.get(point) as f32;
-        vertex
-    });
-
+fn setup_terrain(mut commands: Commands, mut materials: ResMut<Assets<StandardMaterial>>) {
     commands.spawn(TerrainBundle {
         pbr: PbrBundle {
-            mesh: meshes.add(terrain_mesh),
+            mesh: Handle::default(),
             material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
             ..default()
@@ -79,67 +58,34 @@ fn setup_terrain(
     });
 }
 
-fn update_mesh_positions<F>(mesh: &mut Mesh, mut f: F)
-where
-    F: FnMut(Vec3) -> Vec3,
-{
-    use bevy::render::mesh::VertexAttributeValues;
-
-    // Update mesh positions
-    let positions = match mesh
-        .attribute_mut(Mesh::ATTRIBUTE_POSITION)
-        .expect("mesh vertex positions")
-    {
-        VertexAttributeValues::Float32x3(positions, ..) => positions,
-        _ => unreachable!("mesh vertex positions should be of type Vec3"),
-    };
-
-    for position in positions.iter_mut() {
-        *position = f(Vec3::from_array(*position)).to_array();
-    }
-
-    let positions = positions.clone();
-
-    // Re-calculate mesh normals
-    let indices = mesh
-        .indices()
-        .expect("mesh indices")
-        .iter()
-        .collect::<Vec<_>>();
-
-    let normals = match mesh
-        .attribute_mut(Mesh::ATTRIBUTE_NORMAL)
-        .expect("mesh vertex normals")
-    {
-        VertexAttributeValues::Float32x3(normals, ..) => normals,
-        _ => unreachable!("mesh vertex normals should be of type Vec3"),
-    };
-
-    for chunk in indices.chunks_exact(3) {
-        let a = chunk[0];
-        let b = chunk[1];
-        let c = chunk[2];
-
-        let va = Vec3::from_array(positions[a]);
-        let vb = Vec3::from_array(positions[b]);
-        let vc = Vec3::from_array(positions[c]);
-
-        let vba = vb - va;
-        let vca = vc - va;
-        let nf = vba.cross(vca);
-        let nv = nf / nf.length();
-
-        normals[a] = nv.to_array();
-        normals[b] = nv.to_array();
-        normals[c] = nv.to_array();
-    }
-}
-
 fn config_system(
     mut contexts: EguiContexts,
+    mut terrains: Query<&mut Terrain>,
     mut wireframe_config: ResMut<WireframeConfig>,
     diagnostics: Res<Diagnostics>,
 ) {
+    egui::Window::new("Terrain").show(contexts.ctx_mut(), |ui| {
+        ui.set_min_width(200.0);
+
+        for (i, mut t) in terrains.iter_mut().enumerate() {
+            if i != 0 {
+                ui.separator();
+            }
+
+            ui.label(format!("Seed: {}", t.seed));
+
+            let mut subd = t.subdivisions;
+            let mut size = t.size;
+            let r1 = ui.add(egui::Slider::new(&mut subd, 1..=300).text("Subdivisions"));
+            let r2 = ui.add(egui::Slider::new(&mut size, 1.0..=100.0).text("Size"));
+
+            if r1.changed() || r2.changed() {
+                t.subdivisions = subd;
+                t.size = size;
+            }
+        }
+    });
+
     egui::Window::new("Renderer").show(contexts.ctx_mut(), |ui| {
         ui.set_min_width(200.0);
 
