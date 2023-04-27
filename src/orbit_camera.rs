@@ -1,4 +1,13 @@
+use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
+
+#[derive(Bundle, Default)]
+pub struct OrbitUserCameraBundle {
+    pub user_input: UserInput,
+
+    #[bundle]
+    pub orbit: OrbitCameraBundle,
+}
 
 #[derive(Bundle, Default)]
 pub struct OrbitCameraBundle {
@@ -6,6 +15,23 @@ pub struct OrbitCameraBundle {
 
     #[bundle]
     pub camera: Camera3dBundle,
+}
+
+#[derive(Component)]
+pub struct UserInput {
+    pub move_speed: f32,
+    pub rotation_speed: f32,
+    pub zoom_speed: f32,
+}
+
+impl Default for UserInput {
+    fn default() -> Self {
+        Self {
+            move_speed: 3.0,
+            rotation_speed: 40.0,
+            zoom_speed: 50.0,
+        }
+    }
 }
 
 #[derive(Component)]
@@ -50,8 +76,54 @@ fn update_orbit(mut orbits: Query<(&mut Transform, &OrbitComponent)>) {
     }
 }
 
-fn target_movement(mut orbits: Query<&mut OrbitComponent>, time: Res<Time>) {
-    for mut orbit in orbits.iter_mut() {
-        orbit.rotation.x += 20.0 * time.delta_seconds();
+fn target_movement(
+    mut orbits: Query<(&mut OrbitComponent, &UserInput)>,
+    time: Res<Time>,
+    keys: Res<Input<KeyCode>>,
+    mouse: Res<Input<MouseButton>>,
+    mut scroll: EventReader<MouseWheel>,
+    mut motion: EventReader<MouseMotion>,
+) {
+    let dt = time.delta_seconds();
+
+    for (mut orbit, user_input) in orbits.iter_mut() {
+        let mut velocity = Vec3::ZERO;
+
+        // Position
+        if keys.any_pressed([KeyCode::W, KeyCode::Up]) {
+            velocity.x -= user_input.move_speed * dt;
+        }
+
+        if keys.any_pressed([KeyCode::S, KeyCode::Down]) {
+            velocity.x += user_input.move_speed * dt;
+        }
+
+        if keys.any_pressed([KeyCode::A, KeyCode::Left]) {
+            velocity.z += user_input.move_speed * dt;
+        }
+
+        if keys.any_pressed([KeyCode::D, KeyCode::Right]) {
+            velocity.z -= user_input.move_speed * dt;
+        }
+
+        if keys.pressed(KeyCode::LShift) {
+            velocity *= 2.0;
+        }
+
+        velocity = Quat::from_rotation_y(-orbit.rotation.x.to_radians()) * velocity;
+        orbit.target += velocity;
+
+        // Rotation
+        if mouse.pressed(MouseButton::Middle) {
+            for ev in motion.iter() {
+                orbit.rotation.x += user_input.rotation_speed * ev.delta.x * dt;
+                orbit.rotation.y += user_input.rotation_speed * ev.delta.y * dt;
+            }
+        }
+
+        // Distance from target
+        for ev in scroll.iter() {
+            orbit.distance -= user_input.zoom_speed * ev.y * dt;
+        }
     }
 }

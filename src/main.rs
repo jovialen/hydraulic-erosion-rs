@@ -25,13 +25,7 @@ fn main() {
 }
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn(OrbitCameraBundle {
-        camera: Camera3dBundle {
-            transform: Transform::from_xyz(0.0, 5.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
-        },
-        ..default()
-    });
+    commands.spawn(OrbitUserCameraBundle::default());
 }
 
 fn setup_lights(mut commands: Commands) {
