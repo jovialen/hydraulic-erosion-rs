@@ -25,7 +25,16 @@ fn main() {
 }
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn(OrbitUserCameraBundle::default());
+    commands.spawn(OrbitUserCameraBundle {
+        orbit: OrbitCameraBundle {
+            orbit: OrbitComponent {
+                distance: 20.0,
+                ..default()
+            },
+            ..default()
+        },
+        ..default()
+    });
 }
 
 fn setup_lights(mut commands: Commands) {
@@ -53,7 +62,7 @@ fn setup_terrain(
         pbr: PbrBundle {
             mesh: meshes.add(empty_mesh.clone()),
             material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0),
+            transform: Transform::from_xyz(0.0, 0.0, 6.0),
             ..default()
         },
         ..default()
@@ -63,7 +72,7 @@ fn setup_terrain(
         pbr: PbrBundle {
             mesh: meshes.add(empty_mesh),
             material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
-            transform: Transform::from_xyz(15.0, 0.0, 0.0),
+            transform: Transform::from_xyz(0.0, 0.0, -6.0),
             ..default()
         },
         ..default()
@@ -102,7 +111,7 @@ fn config_system(
                         ui.label("Seed");
                         ui.end_row();
 
-                        changed |= ui.add(egui::Slider::new(&mut subd, 1..=300)).changed();
+                        changed |= ui.add(egui::Slider::new(&mut subd, 1..=100)).changed();
                         ui.label("Subdivisions");
                         ui.end_row();
 

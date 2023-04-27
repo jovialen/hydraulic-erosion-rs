@@ -23,7 +23,7 @@ impl Default for Terrain {
         Self {
             seed: rand::random(),
             size: 10.0,
-            subdivisions: 100,
+            subdivisions: 10,
         }
     }
 }
@@ -50,7 +50,14 @@ fn create_terrain_mesh(
 }
 
 /// Generate a mesh for un-eroded terrain.
-fn generate_initial_terrain(seed: u32, size: f32, subdivisions: u32) -> Mesh {
+///
+/// # Arguments
+///
+/// * `seed` - Terrain seed
+/// * `size` - Size of terrain
+/// * `density` - How many subdivisions per unit of size
+fn generate_initial_terrain(seed: u32, size: f32, density: u32) -> Mesh {
+    let subdivisions = density * size.round().abs() as u32;
     let mut mesh = Mesh::from(shape::Plane { size, subdivisions });
 
     let noise = Perlin::new(seed);
