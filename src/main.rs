@@ -29,13 +29,15 @@ fn setup_camera(mut commands: Commands) {
 }
 
 fn setup_lights(mut commands: Commands) {
-    commands.spawn(PointLightBundle {
-        point_light: PointLight {
-            intensity: 1500.0,
+    // Sun
+    commands.spawn(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            color: Color::rgb_u8(255, 228, 132),
+            illuminance: 10_000.0,
             shadows_enabled: true,
             ..default()
         },
-        transform: Transform::from_xyz(0.0, 10.0, 0.0),
+        transform: Transform::from_xyz(100.0, 500.0, 100.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
     });
 }
