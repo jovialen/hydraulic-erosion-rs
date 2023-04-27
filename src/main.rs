@@ -84,20 +84,16 @@ fn config_system(
         ui.set_min_width(200.0);
 
         for (i, mut terrain) in terrains.iter_mut().enumerate() {
-            if i != 0 {
-                ui.separator();
-            }
-
-            let mut seed = terrain.seed;
-            let mut subd = terrain.subdivisions;
-            let mut size = terrain.size;
-
             egui::CollapsingHeader::new(format!("Terrain {i}")).show(ui, |ui| {
                 egui::Grid::new(format!("terrain {i}"))
                     .num_columns(2)
                     .spacing([40.0, 4.0])
                     .striped(true)
                     .show(ui, |ui| {
+                        let mut seed = terrain.seed;
+                        let mut subd = terrain.subdivisions;
+                        let mut size = terrain.size;
+
                         let mut changed = false;
 
                         ui.horizontal(|ui| {
